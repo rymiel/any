@@ -8,7 +8,17 @@ struct Any
   end
 
   def initialize(obj : T) forall T
-    @object = Box.box obj
+    # HACK: unions and typeids are weird
+    @object = Pointer(Void).null
+    {% if T.union? %}
+      @object = case obj
+      {% for t in T.union_types %}
+        in {{ t }} then Box.box obj
+      {% end %}
+      end
+    {% else %}
+      @object = Box.box obj
+    {% end %}
     @stored_type = obj.crystal_type_id
     @@known_type_names[@stored_type] = obj.class.name
   end
